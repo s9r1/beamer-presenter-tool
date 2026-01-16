@@ -4,7 +4,7 @@
 
 /* Start Screen */
 .start-screen {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -27,10 +27,8 @@
 }
 
 .start-header h1 {
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
+    font-weight: 700;
     margin-bottom: var(--spacing-sm);
 }
 
@@ -81,7 +79,7 @@
 /* Presenter Screen */
 .presenter-screen {
     display: none;
-    height: 100vh;
+    height: 100dvh;
     flex-direction: column;
     background: var(--bg-primary);
 }
@@ -193,10 +191,10 @@
 
 .clock-value,
 .timer-value {
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
     font-size: 1rem;
     font-weight: 500;
-    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
 }
 
 .timer-value {
@@ -246,7 +244,6 @@
     color: var(--text-secondary);
     font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
 }
 
 .preview-canvas-wrapper {
@@ -337,7 +334,7 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-md);
-    z-index: 100;
+    z-index: var(--z-modal);
 }
 
 .loading-spinner {
