@@ -6,3 +6,4 @@ Presenter view for Beamer PDF with notes.
 - Current/next slide preview with notes
 - Timer and clock
 - Keyboard navigation
+- Pointer sync (shows on audience view while clicking on presenter)
