@@ -5,7 +5,7 @@
 
 import { CONFIG, AppState } from './config.js';
 import { initPdfJs, loadPdfFromBuffer, loadPdfFromUrl, renderAudienceSlide, renderNotesArea } from './pdf-renderer.js';
-import { openAudienceWindow, sendNavigateToAudience, setupPresenterMessageListener, isAudienceConnected } from './sync.js';
+import { openAudienceWindow, sendNavigateToAudience, sendPointerToAudience, setupPresenterMessageListener, isAudienceConnected } from './sync.js';
 import { startClock, startTimer, pauseTimer, resetTimer, toggleTimer, getTimerState } from './timer.js';
 
 // DOM Elements
@@ -38,6 +38,8 @@ const elements = {
 
     // Preview panels
     currentPreview: null,
+    currentPreviewWrapper: null,
+    presenterPointer: null,
     nextPreview: null,
     nextPreviewSection: null,
     notesCanvas: null,
@@ -84,6 +86,8 @@ function initElements() {
 
     // Preview panels
     elements.currentPreview = document.getElementById('current-preview');
+    elements.currentPreviewWrapper = document.getElementById('current-preview-wrapper');
+    elements.presenterPointer = document.getElementById('presenter-pointer');
     elements.nextPreview = document.getElementById('next-preview');
     elements.nextPreviewSection = document.getElementById('next-preview-section');
     elements.notesCanvas = document.getElementById('notes-canvas');
@@ -187,6 +191,13 @@ async function navigateTo(page) {
     }
 
     AppState.currentPage = page;
+
+    // Hide laser pointer on page change
+    sendPointerToAudience(null, null, false);
+    if (elements.presenterPointer) {
+        elements.presenterPointer.classList.add('hidden');
+    }
+
     await renderCurrentPage();
 
     // Notify audience
@@ -449,6 +460,114 @@ function setupEventListeners() {
 
     // Periodic connection check
     setInterval(updateConnectionStatus, 2000);
+
+    // Laser pointer functionality
+    let isPointerActive = false;
+    let lastPointerSendTime = 0;
+    const POINTER_THROTTLE_MS = 33; // ~30fps
+
+    /**
+     * Calculate normalized pointer coordinates
+     * @param {MouseEvent} e - Mouse event
+     * @returns {{x: number, y: number}|null} - Normalized coordinates or null if outside canvas
+     */
+    function getPointerCoords(e) {
+        const canvas = elements.currentPreview;
+        const canvasRect = canvas.getBoundingClientRect();
+
+        // Calculate position relative to canvas
+        const x = (e.clientX - canvasRect.left) / canvasRect.width;
+        const y = (e.clientY - canvasRect.top) / canvasRect.height;
+
+        // Clamp to 0-1 range
+        if (x < 0 || x > 1 || y < 0 || y > 1) {
+            return null;
+        }
+
+        return { x, y };
+    }
+
+    /**
+     * Update presenter pointer position
+     */
+    function updatePresenterPointer(x, y, active) {
+        if (!active || x === null || y === null) {
+            elements.presenterPointer.classList.add('hidden');
+            return;
+        }
+
+        elements.presenterPointer.classList.remove('hidden');
+
+        const canvas = elements.currentPreview;
+        const canvasRect = canvas.getBoundingClientRect();
+        const wrapperRect = elements.currentPreviewWrapper.getBoundingClientRect();
+
+        // Calculate offset of canvas within wrapper
+        const offsetX = canvasRect.left - wrapperRect.left;
+        const offsetY = canvasRect.top - wrapperRect.top;
+
+        // Calculate position in pixels
+        const posX = offsetX + (x * canvasRect.width);
+        const posY = offsetY + (y * canvasRect.height);
+
+        elements.presenterPointer.style.left = `${posX}px`;
+        elements.presenterPointer.style.top = `${posY}px`;
+    }
+
+    /**
+     * Send pointer position with throttling
+     */
+    function sendPointerThrottled(x, y, active) {
+        const now = Date.now();
+        if (now - lastPointerSendTime >= POINTER_THROTTLE_MS) {
+            sendPointerToAudience(x, y, active);
+            lastPointerSendTime = now;
+        }
+    }
+
+    // Mouse down - start showing pointer
+    elements.currentPreviewWrapper.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Only left click
+        isPointerActive = true;
+
+        const coords = getPointerCoords(e);
+        if (coords) {
+            updatePresenterPointer(coords.x, coords.y, true);
+            sendPointerToAudience(coords.x, coords.y, true);
+        }
+    });
+
+    // Mouse move - update pointer position
+    elements.currentPreviewWrapper.addEventListener('mousemove', (e) => {
+        if (!isPointerActive) return;
+
+        const coords = getPointerCoords(e);
+        if (coords) {
+            updatePresenterPointer(coords.x, coords.y, true);
+            sendPointerThrottled(coords.x, coords.y, true);
+        } else {
+            // Outside canvas bounds
+            updatePresenterPointer(null, null, false);
+            sendPointerToAudience(null, null, false);
+        }
+    });
+
+    // Mouse up - hide pointer
+    elements.currentPreviewWrapper.addEventListener('mouseup', (e) => {
+        if (e.button !== 0) return;
+        isPointerActive = false;
+        updatePresenterPointer(null, null, false);
+        sendPointerToAudience(null, null, false);
+    });
+
+    // Mouse leave - hide pointer
+    elements.currentPreviewWrapper.addEventListener('mouseleave', () => {
+        if (isPointerActive) {
+            isPointerActive = false;
+            updatePresenterPointer(null, null, false);
+            sendPointerToAudience(null, null, false);
+        }
+    });
 }
 
 /**

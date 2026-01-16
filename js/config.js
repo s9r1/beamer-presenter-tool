@@ -24,6 +24,7 @@ export const CONFIG = {
     MODE: 'MODE',
     PDF_DATA: 'PDF_DATA',
     ERROR: 'ERROR',
+    POINTER: 'POINTER',  // Laser pointer position
   },
 
   // Display modes

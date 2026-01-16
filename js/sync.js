@@ -95,6 +95,20 @@ export function sendModeToAudience(mode) {
 }
 
 /**
+ * Send laser pointer position to audience
+ * @param {number} x - Normalized X coordinate (0-1), null if hiding
+ * @param {number} y - Normalized Y coordinate (0-1), null if hiding
+ * @param {boolean} active - Whether pointer is active/visible
+ */
+export function sendPointerToAudience(x, y, active) {
+    sendToAudience(CONFIG.messageTypes.POINTER, {
+        x: x,
+        y: y,
+        active: active,
+    });
+}
+
+/**
  * Send PDF data to audience
  */
 export function sendPdfDataToAudience() {

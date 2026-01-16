@@ -31,8 +31,9 @@
     <!-- Audience Screen -->
     <div id="audience-screen" class="audience-screen hidden">
         <div class="audience-main">
-            <div class="audience-canvas-wrapper">
+            <div class="audience-canvas-wrapper" id="audience-canvas-wrapper">
                 <canvas id="audience-canvas"></canvas>
+                <div id="audience-pointer" class="laser-pointer hidden"></div>
             </div>
         </div>
         <div id="page-indicator" class="page-indicator">
@@ -54,6 +55,8 @@
         const waitingScreen = document.getElementById('waiting-screen');
         const audienceScreen = document.getElementById('audience-screen');
         const canvas = document.getElementById('audience-canvas');
+        const canvasWrapper = document.getElementById('audience-canvas-wrapper');
+        const audiencePointer = document.getElementById('audience-pointer');
         const pageIndicator = document.getElementById('page-indicator');
         const audiencePage = document.getElementById('audience-page');
         const audienceTotal = document.getElementById('audience-total');
@@ -228,6 +231,36 @@
         }
 
         /**
+         * Update laser pointer position
+         * @param {number} x - Normalized X (0-1)
+         * @param {number} y - Normalized Y (0-1)
+         * @param {boolean} active - Whether pointer is visible
+         */
+        function updatePointer(x, y, active) {
+            if (!active || x === null || y === null) {
+                audiencePointer.classList.add('hidden');
+                return;
+            }
+
+            audiencePointer.classList.remove('hidden');
+
+            // Position relative to canvas
+            const canvasRect = canvas.getBoundingClientRect();
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+
+            // Calculate offset of canvas within wrapper
+            const offsetX = canvasRect.left - wrapperRect.left;
+            const offsetY = canvasRect.top - wrapperRect.top;
+
+            // Calculate position in pixels
+            const posX = offsetX + (x * canvasRect.width);
+            const posY = offsetY + (y * canvasRect.height);
+
+            audiencePointer.style.left = `${posX}px`;
+            audiencePointer.style.top = `${posY}px`;
+        }
+
+        /**
          * Handle messages from presenter
          */
         function handleMessage(event) {
@@ -289,6 +322,10 @@
 
                 case 'REQUEST_FULLSCREEN':
                     requestFullscreen();
+                    break;
+
+                case 'POINTER':
+                    updatePointer(payload.x, payload.y, payload.active);
                     break;
             }
         }
