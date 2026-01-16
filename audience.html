@@ -220,14 +220,21 @@
         /**
          * Request fullscreen
          */
-        function requestFullscreen() {
+        async function requestFullscreen() {
             const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
+            try {
+                if (elem.requestFullscreen) {
+                    await elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    await elem.webkitRequestFullscreen();
+                }
+                fullscreenBanner.classList.add('hidden');
+            } catch (err) {
+                // Fullscreen failed (likely due to missing user gesture)
+                // Show banner so user can click the button directly
+                console.log('Fullscreen request failed, showing banner:', err.message);
+                fullscreenBanner.classList.remove('hidden');
             }
-            fullscreenBanner.classList.add('hidden');
         }
 
         /**
