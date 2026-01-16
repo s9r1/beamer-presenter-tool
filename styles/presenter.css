@@ -1,0 +1,379 @@
+/* ============================================
+   Beamer Presenter - Presenter Screen Styles
+   ============================================ */
+
+/* Start Screen */
+.start-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    background:
+        radial-gradient(ellipse at top, rgba(102, 126, 234, 0.15), transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(118, 75, 162, 0.1), transparent 50%),
+        var(--bg-primary);
+}
+
+.start-container {
+    width: 100%;
+    max-width: 540px;
+}
+
+.start-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.start-header h1 {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: var(--spacing-sm);
+}
+
+.start-header p {
+    color: var(--text-secondary);
+}
+
+.start-card {
+    padding: var(--spacing-xl);
+}
+
+.start-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.start-section:last-child {
+    margin-bottom: 0;
+}
+
+.url-input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.url-input-group .input {
+    flex: 1;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+.settings-row label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.advanced-content {
+    padding-top: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Presenter Screen */
+.presenter-screen {
+    display: none;
+    height: 100vh;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+.presenter-screen.active {
+    display: flex;
+}
+
+/* Top Bar */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.top-bar-left,
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.top-bar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.timer-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: var(--glass-bg);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+}
+
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+}
+
+.page-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+    min-width: 80px;
+    /* Fixed width to prevent layout shift */
+}
+
+.page-current {
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    min-width: 2ch;
+    /* Fixed width for page numbers */
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    /* Monospace numbers */
+}
+
+.page-total {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    /* Monospace numbers */
+}
+
+.page-nav {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.page-jump {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.page-jump .input {
+    width: 60px;
+    text-align: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* Time Display */
+.time-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.clock,
+.timer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.time-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.clock-value,
+.timer-value {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+.timer-value {
+    min-width: 80px;
+}
+
+.timer-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.timer-controls .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+}
+
+/* Main Content */
+.presenter-main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Preview Panel (Right) - Wider for future pointer feature */
+.preview-panel {
+    width: 40%;
+    min-width: 350px;
+    max-width: 550px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--glass-border);
+    overflow-y: auto;
+}
+
+.preview-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.preview-section h4 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.preview-canvas-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    min-height: 150px;
+}
+
+.preview-canvas-wrapper canvas {
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: var(--shadow-md);
+}
+
+/* Notes Panel (Left) */
+.notes-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+    overflow: hidden;
+}
+
+.notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.notes-header h3 {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.notes-canvas-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.notes-canvas-wrapper canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Bottom Bar */
+.bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--glass-border);
+}
+
+.bottom-bar-left,
+.bottom-bar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+
+/* Loading State */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    z-index: 100;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--glass-border);
+    border-top-color: var(--accent-start);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .presenter-main {
+        flex-direction: column;
+    }
+
+    .preview-panel {
+        width: 100%;
+        max-width: none;
+        flex-direction: row;
+        border-left: none;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .preview-section {
+        flex: 1;
+    }
+}

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beamer Presenter - Audience View</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/audience.css">
+
+    <!-- PDF.js -->
+    <script>
+        import('./vendor/pdfjs/pdf.min.mjs').then(pdfjsLib => {
+            window.pdfjsLib = pdfjsLib;
+        }).catch(() => {
+            console.log('Module import failed');
+        });
+    </script>
+</head>
+
+<body>
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="waiting-screen">
+        <div class="waiting-logo">📽️</div>
+        <div class="waiting-text">Waiting for presenter...</div>
+        <div class="waiting-spinner"></div>
+    </div>
+
+    <!-- Audience Screen -->
+    <div id="audience-screen" class="audience-screen hidden">
+        <div class="audience-main">
+            <div class="audience-canvas-wrapper">
+                <canvas id="audience-canvas"></canvas>
+            </div>
+        </div>
+        <div id="page-indicator" class="page-indicator">
+            <span id="audience-page">1</span> / <span id="audience-total">1</span>
+        </div>
+    </div>
+
+    <!-- Fullscreen Banner -->
+    <div id="fullscreen-banner" class="fullscreen-banner hidden">
+        <span class="fullscreen-banner-text">Press F11 or click the button for fullscreen</span>
+        <button id="fullscreen-btn" class="btn btn-primary">Fullscreen</button>
+        <button id="close-banner-btn" class="close-btn">✕</button>
+    </div>
+
+    <script type="module">
+        import { CONFIG, AppState, getRegions } from './js/config.js';
+
+        // Elements
+        const waitingScreen = document.getElementById('waiting-screen');
+        const audienceScreen = document.getElementById('audience-screen');
+        const canvas = document.getElementById('audience-canvas');
+        const pageIndicator = document.getElementById('page-indicator');
+        const audiencePage = document.getElementById('audience-page');
+        const audienceTotal = document.getElementById('audience-total');
+        const fullscreenBanner = document.getElementById('fullscreen-banner');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const closeBannerBtn = document.getElementById('close-banner-btn');
+
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let location = 'right';
+        let split = 0.5;
+        let displayMode = 'normal';
+        let pageCache = new Map();
+
+        /**
+         * Initialize PDF.js
+         */
+        async function initPdfJs() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.pdfjsLib) {
+                        const isFileProtocol = window.location.protocol === 'file:';
+                        if (isFileProtocol) {
+                            window.pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+                        } else {
+                            window.pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdfjs/pdf.worker.min.mjs';
+                        }
+                        resolve(true);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        /**
+         * Load PDF from ArrayBuffer
+         */
+        async function loadPdf(arrayBuffer) {
+            const loadingTask = window.pdfjsLib.getDocument({
+                data: arrayBuffer,
+                disableAutoFetch: true,
+                disableStream: true,
+            });
+
+            pdfDoc = await loadingTask.promise;
+            totalPages = pdfDoc.numPages;
+            pageCache.clear();
+
+            console.log(`Audience: PDF loaded with ${totalPages} pages`);
+        }
+
+        /**
+         * Render audience slide
+         */
+        async function renderSlide(pageNum) {
+            if (!pdfDoc || pageNum < 1 || pageNum > totalPages) {
+                return;
+            }
+
+            currentPage = pageNum;
+
+            // Update page indicator
+            audiencePage.textContent = currentPage;
+            audienceTotal.textContent = totalPages;
+
+            // Show page indicator briefly
+            pageIndicator.classList.add('visible');
+            setTimeout(() => {
+                pageIndicator.classList.remove('visible');
+            }, 2000);
+
+            // Check cache
+            const cacheKey = `${pageNum}`;
+            if (pageCache.has(cacheKey)) {
+                const cached = pageCache.get(cacheKey);
+                drawToCanvas(cached);
+                return;
+            }
+
+            try {
+                const page = await pdfDoc.getPage(pageNum);
+                const scale = window.devicePixelRatio || 1;
+                const viewport = page.getViewport({ scale: scale * 3.0 }); // Higher scale for sharper rendering
+
+                // Create offscreen canvas for full page
+                const offscreen = document.createElement('canvas');
+                offscreen.width = viewport.width;
+                offscreen.height = viewport.height;
+
+                await page.render({
+                    canvasContext: offscreen.getContext('2d'),
+                    viewport: viewport,
+                }).promise;
+
+                // Cache
+                if (pageCache.size > 3) {
+                    const firstKey = pageCache.keys().next().value;
+                    pageCache.delete(firstKey);
+                }
+                pageCache.set(cacheKey, offscreen);
+
+                drawToCanvas(offscreen);
+            } catch (error) {
+                console.error('Render error:', error);
+            }
+        }
+
+        /**
+         * Draw extracted region to display canvas
+         */
+        function drawToCanvas(sourceCanvas) {
+            const regions = getRegions(sourceCanvas.width, sourceCanvas.height, location, split);
+            const region = regions.audience;
+
+            // Calculate display size
+            const containerWidth = audienceScreen.clientWidth;
+            const containerHeight = audienceScreen.clientHeight;
+            const aspectRatio = region.w / region.h;
+
+            let displayWidth = containerWidth;
+            let displayHeight = containerWidth / aspectRatio;
+
+            if (displayHeight > containerHeight) {
+                displayHeight = containerHeight;
+                displayWidth = containerHeight * aspectRatio;
+            }
+
+            // Set canvas size
+            const dpr = window.devicePixelRatio || 1;
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+
+            // Draw
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(
+                sourceCanvas,
+                region.x, region.y, region.w, region.h,
+                0, 0, canvas.width, canvas.height
+            );
+        }
+
+        /**
+         * Apply display mode
+         */
+        function applyDisplayMode(mode) {
+            displayMode = mode;
+            audienceScreen.classList.remove('blackout', 'whiteout');
+
+            if (mode === 'black') {
+                audienceScreen.classList.add('blackout');
+            } else if (mode === 'white') {
+                audienceScreen.classList.add('whiteout');
+            }
+        }
+
+        /**
+         * Request fullscreen
+         */
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            }
+            fullscreenBanner.classList.add('hidden');
+        }
+
+        /**
+         * Handle messages from presenter
+         */
+        function handleMessage(event) {
+            const { sessionId, type, payload } = event.data || {};
+
+            // Skip non-valid messages
+            if (!type) {
+                return;
+            }
+
+            // Store session ID from presenter for later use
+            if (sessionId && !CONFIG.sessionId) {
+                CONFIG.sessionId = sessionId;
+            }
+
+            console.log('Audience received message:', type);
+
+            switch (type) {
+                case 'STATE':
+                    console.log('Received state:', payload);
+                    if (payload.location) location = payload.location;
+                    if (payload.split) split = payload.split;
+                    if (payload.totalPages) totalPages = payload.totalPages;
+                    if (payload.mode) applyDisplayMode(payload.mode);
+                    if (payload.page) currentPage = payload.page;
+                    if (pdfDoc && payload.page) {
+                        renderSlide(payload.page);
+                    }
+                    break;
+
+                case 'PDF_DATA':
+                    console.log('Received PDF data, size:', payload.data?.byteLength);
+                    if (payload.location) location = payload.location;
+                    if (payload.split) split = payload.split;
+
+                    loadPdf(payload.data).then(() => {
+                        waitingScreen.classList.add('hidden');
+                        audienceScreen.classList.remove('hidden');
+                        fullscreenBanner.classList.remove('hidden');
+                        renderSlide(currentPage);
+                    }).catch(err => {
+                        console.error('Failed to load PDF:', err);
+                    });
+                    break;
+
+                case 'NAVIGATE':
+                    console.log('Received navigate:', payload);
+                    if (payload.page) {
+                        renderSlide(payload.page);
+                    }
+                    break;
+
+                case 'MODE':
+                    console.log('Received mode:', payload);
+                    if (payload.mode) {
+                        applyDisplayMode(payload.mode);
+                    }
+                    break;
+
+                case 'REQUEST_FULLSCREEN':
+                    requestFullscreen();
+                    break;
+            }
+        }
+
+        /**
+         * Send hello to presenter
+         */
+        function sendHello() {
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({
+                    sessionId: CONFIG.sessionId,
+                    type: 'HELLO',
+                    payload: {},
+                }, '*');
+            }
+        }
+
+        /**
+         * Initialize
+         */
+        async function init() {
+            console.log('Audience view initializing...');
+
+            await initPdfJs();
+
+            // Setup message listener
+            window.addEventListener('message', handleMessage);
+
+            // Fullscreen button
+            fullscreenBtn.addEventListener('click', requestFullscreen);
+            closeBannerBtn.addEventListener('click', () => {
+                fullscreenBanner.classList.add('hidden');
+            });
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                if (pdfDoc && pageCache.has(`${currentPage}`)) {
+                    drawToCanvas(pageCache.get(`${currentPage}`));
+                }
+            });
+
+            // Send hello to presenter (with retry)
+            const sendHelloWithRetry = () => {
+                sendHello();
+                // Retry a few times in case presenter isn't ready
+                setTimeout(sendHello, 500);
+                setTimeout(sendHello, 1500);
+            };
+
+            sendHelloWithRetry();
+
+            console.log('Audience view ready');
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
